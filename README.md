@@ -16,22 +16,22 @@ This project demonstrates professional-grade **modularity**, **clarity**, and **
 
 ## 🧩 **Key Features**
 
-✅ Upload multiple document formats (TXT, PDF, CSV, DOCX, XLSX)
-✅ Smart text extraction and chunking
-✅ OpenAI/Gemini-based embeddings and vector storage
-✅ Accurate, context-based Q&A using RAG
-✅ One-click document summarization
-✅ Sleek and responsive **Next.js + Tailwind** frontend
-✅ Modular Flask backend for easy scaling
-✅ Deployment-ready for **Render (backend)** and **Vercel (frontend)**
+✅ Upload multiple document formats (TXT, PDF, CSV, DOCX, XLSX)  
+✅ Smart text extraction and chunking  
+✅ OpenAI/Gemini-based embeddings and vector storage  
+✅ Accurate, context-based Q&A using RAG  
+✅ One-click document summarization  
+✅ Sleek and responsive **Next.js + Tailwind** frontend  
+✅ Modular Flask backend for easy scaling  
+✅ Deployment-ready for **Render (backend)** and **Vercel (frontend)** [Optional]
 
 ---
 
 ## 🏗️ **Architecture Diagram**
 
-```mermaid
-flowchart TD
-
+```mermaid 
+flowchart TD 
+  
 A[📄 User Uploads Documents<br>(TXT, CSV, PDF, DOCX, XLSX)] --> B[🧩 Flask Backend]
 
 B --> C[🪶 File Processing<br>Extract Text + Clean Data]
@@ -102,13 +102,13 @@ KnowVault/
 
 ## 🧠 **How KnowVault Works**
 
-1️⃣ **Upload Documents** → TXT, CSV, DOCX, XLSX, PDF
-2️⃣ **Processing & Chunking** → Extract and split content into digestible pieces
-3️⃣ **Embedding Creation** → Convert text into vector form using Gemini API
-4️⃣ **Storage** → Save embeddings locally using Chroma
-5️⃣ **Query Handling** → Convert user query to embedding and retrieve top relevant chunks
-6️⃣ **Synthesis** → LLM generates factual, context-aware answers
-7️⃣ **Frontend Display** → Show generated answer + document sources
+1️⃣ **Upload Documents** → TXT, CSV, DOCX, XLSX, PDF  
+2️⃣ **Processing & Chunking** → Extract and split content into digestible pieces  
+3️⃣ **Embedding Creation** → Convert text into vector form using Gemini API  
+4️⃣ **Storage** → Save embeddings locally using Chroma  
+5️⃣ **Query Handling** → Convert user query to embedding and retrieve top relevant chunks  
+6️⃣ **Synthesis** → LLM generates factual, context-aware answers  
+7️⃣ **Frontend Display** → Show generated answer + document sources  
 
 ---
 
@@ -207,10 +207,10 @@ Your frontend will be live at 👉 **[http://localhost:3000](http://localhost:30
 
 ## 🎥 **Demo Flow**
 
-🟢 **Step 1:** Upload a few PDFs or DOCX files
-🟢 **Step 2:** Ask a natural question (e.g., “Summarize the key findings”)
-🟢 **Step 3:** View AI-generated contextual answer + document sources
-🟢 **Step 4 (Bonus):** Click “Summarize Documents” for quick insights
+🟢 **Step 1:** Upload a few PDFs or DOCX files  
+🟢 **Step 2:** Ask a natural question (e.g., “Summarize the key findings”)  
+🟢 **Step 3:** View AI-generated contextual answer + document sources  
+🟢 **Step 4 (Bonus):** Click “Summarize Documents” for quick insights  
 
 **🎬 Example Command:**
 
