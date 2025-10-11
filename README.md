@@ -222,12 +222,12 @@ curl -X POST http://127.0.0.1:5000/query -H "Content-Type: application/json" -d 
 
 ## 🧱 **Evaluation Focus**
 
-✅ Retrieval accuracy
-✅ Synthesis quality
-✅ Code structure & modularity
-✅ Clean and responsive UI
-✅ LLM integration (Gemini)
-✅ Bonus: Source display + Summarization
+✅ Retrieval accuracy  
+✅ Synthesis quality  
+✅ Code structure & modularity  
+✅ Clean and responsive UI  
+✅ LLM integration (Gemini)  
+✅ Bonus: Source display + Summarization  
 
 ---
 
