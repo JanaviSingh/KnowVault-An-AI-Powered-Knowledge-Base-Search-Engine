@@ -1,5 +1,5 @@
 
-# 🧠 **KnowVault – AI-Powered Knowledge Vault and Document Intelligence Engine**
+# 🧠 **KnowVault – AI-Powered Knowledge Base Search Engine**
 
 > **Your intelligent vault of knowledge — search, summarize, and discover with AI.**
 > Powered by **Flask**, **LangChain**, **Gemini LLM**, and a modern **Next.js + Tailwind CSS** frontend, **KnowVault** transforms scattered documents into a smart, searchable knowledge base.
