@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KnowVault - An AI-Driven Knowledge-base Search Engine </title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom Styles that complement Tailwind */
+        /* Base Dark Theme */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #111827; /* Dark Gray 900 */
+            color: #D1D5DB; /* Light Gray 300 */
+        }
+        /* Card Background & Shadow for contrast */
+        .card { 
+            background-color: #1F2937; /* Dark Gray 800 */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2); 
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 20px -5px rgba(0, 0, 0, 0.4); 
+        }
+
+        /* Custom Button Colors for Dark Theme */
+        .button-qa { background-color: #4F46E5; } /* Indigo 600 */
+        .button-qa:hover:not(:disabled) { background-color: #4338CA; } /* Indigo 700 */
+        .button-summary { background-color: #10B981; } /* Emerald 500 */
+        .button-summary:hover:not(:disabled) { background-color: #059669; } /* Emerald 600 */
+
+        /* Spinner Animation */
+        .spinner { border-top-color: transparent; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Header Text Colors Adjusted for Dark Mode -->
+        <h1 class="text-4xl font-extrabold text-indigo-400 mb-6 text-center">RAG Assistant (File Upload)</h1>
+        <p class="text-center text-gray-400 mb-8">Upload your PDF, CSV, or Excel file. Data is processed securely on the server.</p>
+
+        <!-- File Upload Input Card -->
+        <div class="space-y-6 mb-8 p-6 rounded-xl card border border-gray-700">
+            <h2 class="text-2xl font-semibold text-indigo-300">1. Upload Document File</h2>
+            <div>
+                <label for="documentFile" class="block text-sm font-medium text-gray-300 mb-1">Select File (.pdf, .xlsx, .csv)</label>
+                <!-- Input Styling for Dark Theme -->
+                <input type="file" id="documentFile" accept=".pdf,.xlsx,.csv" 
+                       class="w-full p-3 border border-gray-600 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 bg-gray-700 text-gray-200 cursor-pointer transition duration-200">
+            </div>
+        </div>
+
+        <!-- Q&A and Summarization Card -->
+        <div class="space-y-6 p-6 rounded-xl card border border-gray-700">
+            <h2 class="text-2xl font-semibold text-indigo-300">2. Actions</h2>
+            <div>
+                <label for="queryInput" class="block text-sm font-medium text-gray-300 mb-1">Your Question (for Q&A mode)</label>
+                <!-- Input Styling for Dark Theme -->
+                <input type="text" id="queryInput" 
+                       class="w-full p-3 border border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 bg-gray-700 text-gray-200 transition duration-200" 
+                       placeholder="e.g., What are the main points in the file?">
+            </div>
+
+            <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+                <button id="askButton" onclick="handleAskQuestion()" 
+                        class="flex-1 button-qa text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center disabled:opacity-50 transition duration-300 ease-in-out transform hover:scale-[1.01] active:scale-[0.99]">
+                    <span id="askText">Ask Question (RAG Mode)</span>
+                    <div id="askSpinner" class="hidden spinner w-5 h-5 border-4 border-white rounded-full ml-2"></div>
+                </button>
+                
+                <button id="summarizeButton" onclick="handleSummarizeAll()" 
+                        class="flex-1 button-summary text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center disabled:opacity-50 transition duration-300 ease-in-out transform hover:scale-[1.01] active:scale-[0.99]">
+                    <span id="summaryText">Summarize All Content</span>
+                    <div id="summarySpinner" class="hidden spinner w-5 h-5 border-4 border-white rounded-full ml-2"></div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Output Area Card -->
+        <div class="mt-8 p-6 rounded-xl card border border-gray-700">
+            <h2 class="text-2xl font-semibold text-indigo-300 mb-4">3. Server Response</h2>
+            <!-- Output box styling for Dark Theme -->
+            <div id="outputArea" 
+                 class="min-h-[150px] p-4 bg-gray-700 border border-gray-600 rounded-lg text-gray-200 whitespace-pre-wrap overflow-auto transition duration-200">
+                Server response will appear here...
+            </div>
+        </div>
+        
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const BACKEND_URL = 'http://127.0.0.1:5000';
+        let isBusy = false;
+
+        function setLoading(isAsking, state) {
+            isBusy = state;
+            
+            const targetButtonId = isAsking ? 'askButton' : 'summarizeButton';
+            const targetTextId = isAsking ? 'askText' : 'summaryText';
+            const targetSpinnerId = isAsking ? 'askSpinner' : 'summarySpinner';
+            
+            const targetButton = document.getElementById(targetButtonId);
+            const otherButton = isAsking ? document.getElementById('summarizeButton') : document.getElementById('askButton');
+
+            // Disable all inputs and the other button while busy
+            targetButton.disabled = state;
+            otherButton.disabled = state;
+            document.getElementById('documentFile').disabled = state;
+            document.getElementById('queryInput').disabled = state;
+
+            document.getElementById(targetTextId).textContent = state ? (isAsking ? 'Uploading & Querying...' : 'Uploading & Summarizing...') : (isAsking ? 'Ask Question (RAG Mode)' : 'Summarize All Content');
+            document.getElementById(targetSpinnerId).classList.toggle('hidden', !state);
+            
+            if (state) {
+                // Loading state message color adjusted for dark theme
+                document.getElementById('outputArea').innerHTML = '<p class="text-center text-gray-400">Processing file on the server. This may take a moment...</p>';
+            }
+        }
+
+        async function postFile(endpoint, formData, isAsking) {
+            const outputArea = document.getElementById('outputArea');
+            try {
+                // Fetch call uses formData directly; content-type is set by the browser
+                const response = await fetch(`${BACKEND_URL}${endpoint}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorJson = await response.json().catch(() => ({ message: 'Server error occurred.' }));
+                    // Error message color changed to Red/Pink for visibility
+                    outputArea.textContent = `API Error: ${errorJson.message || `HTTP error! Status: ${response.status}`}`;
+                    outputArea.classList.add('text-red-400');
+                    throw new Error(errorJson.message || `HTTP error! Status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                outputArea.classList.remove('text-red-400'); // Remove error color on success
+                return result.summary || result.answer;
+
+            } catch (error) {
+                outputArea.textContent = `Error connecting to the server: ${error.message}. Please ensure the Python backend is running at ${BACKEND_URL}.`;
+                outputArea.classList.add('text-red-400');
+                console.error("Fetch Error:", error);
+                return null;
+            } finally {
+                setLoading(isAsking, false);
+            }
+        }
+
+        function getFileAndValidate(outputArea) {
+            const fileInput = document.getElementById('documentFile');
+            const file = fileInput.files[0];
+            outputArea.classList.remove('text-red-400'); // Reset error color
+
+            if (!file) {
+                outputArea.textContent = "Error: Please select a file (PDF, CSV, or XLSX) first.";
+                outputArea.classList.add('text-red-400');
+                return null;
+            }
+
+            const allowedExtensions = ['.pdf', '.xlsx', '.csv'];
+            const fileName = file.name.toLowerCase();
+            const isValid = allowedExtensions.some(ext => fileName.endsWith(ext));
+
+            if (!isValid) {
+                outputArea.textContent = "Error: Invalid file type. Only PDF, XLSX, and CSV are supported.";
+                outputArea.classList.add('text-red-400');
+                fileInput.value = ''; // Clear the input
+                return null;
+            }
+            return file;
+        }
+
+        async function handleAskQuestion() {
+            if (isBusy) return;
+            setLoading(true, true);
+
+            const outputArea = document.getElementById('outputArea');
+            const file = getFileAndValidate(outputArea);
+            const query = document.getElementById('queryInput').value.trim();
+
+            if (!file) {
+                setLoading(true, false);
+                return;
+            }
+
+            if (!query) {
+                outputArea.textContent = "Error: Please enter a question in the query input.";
+                outputArea.classList.add('text-red-400');
+                setLoading(true, false);
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('document', file); // 'document' is the key the server will look for
+            formData.append('query', query);
+            
+            const responseText = await postFile('/api/rag/ask', formData, true);
+            if (responseText) {
+                outputArea.textContent = responseText;
+            }
+        }
+
+        async function handleSummarizeAll() {
+            if (isBusy) return;
+            setLoading(false, true);
+
+            const outputArea = document.getElementById('outputArea');
+            const file = getFileAndValidate(outputArea);
+
+            if (!file) {
+                setLoading(false, false);
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('document', file); // 'document' is the key the server will look for
+            
+            const responseText = await postFile('/api/rag/summarize', formData, false);
+            if (responseText) {
+                outputArea.textContent = responseText;
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+
+
