@@ -1,247 +1,155 @@
 
-# 🧠 **KnowVault – AI-Powered Knowledge Base Search Engine**
+# 🧠 KnowVault : An AI-Powered Knowledge Base Search Engine
 
-> **Your intelligent vault of knowledge — search, summarize, and discover with AI.**
-> Powered by **Flask**, **LangChain**, **Gemini LLM**, and a modern **Next.js + Tailwind CSS** frontend, **KnowVault** transforms scattered documents into a smart, searchable knowledge base.
+A **Retrieval-Augmented Generation (RAG)** system built with a **Python (Flask)** backend and a **modern HTML/Tailwind CSS** frontend.  
+This app lets users upload various document types (PDF, CSV, Excel), ask contextual questions, or generate document summaries — all without needing to pre-build vector stores locally.
 
----
-
-## 🚀 **Overview**
-
-**KnowVault** is an AI-driven **Retrieval-Augmented Generation (RAG)** system that enables users to upload custom documents (TXT, CSV, PDF, DOCX, XLSX), automatically processes them into embeddings, and generates **context-aware answers** and **summaries** using the **Gemini LLM**.
-
-This project demonstrates professional-grade **modularity**, **clarity**, and **AI integration**, ideal for production, research, or recruitment showcases.
+The architecture ensures secure API key management (Gemini API) on the server side and provides a **dark-themed, modern user interface** for smooth interaction.
 
 ---
 
-## 🧩 **Key Features**
+## ✨ Features
 
-✅ Upload multiple document formats (TXT, PDF, CSV, DOCX, XLSX)  
-✅ Smart text extraction and chunking  
-✅ OpenAI/Gemini-based embeddings and vector storage  
-✅ Accurate, context-based Q&A using RAG  
-✅ One-click document summarization  
-✅ Sleek and responsive **Next.js + Tailwind** frontend  
-✅ Modular Flask backend for easy scaling  
-✅ Deployment-ready for **Render (backend)** and **Vercel (frontend)** [Optional]
+- **📂 Dynamic File Upload** – Supports `.pdf`, `.xlsx`, `.xls`, and `.csv` file formats.  
+- **🔒 Secure Backend Processing** – All parsing, extraction, and LLM calls are handled safely via Flask.  
+- **🧩 RAG Query Mode** – Ask questions strictly based on the content of the uploaded file (context-aware Q&A).  
+- **📝 Summarization Mode** – Generate a comprehensive summary of the uploaded file.  
+- **🎨 Modern UI** – Responsive dark blue/indigo design using Tailwind CSS.  
+- **⚡ Free-Tier LLM** – Powered by Google’s `gemini-2.5-flash` model.  
 
 ---
 
-## 🏗️ **Architecture Diagram**
+## ⚙️ Architecture
 
-```mermaid 
-flowchart TD 
-  
-A[📄 User Uploads Documents<br>(TXT, CSV, PDF, DOCX, XLSX)] --> B[🧩 Flask Backend]
-
-B --> C[🪶 File Processing<br>Extract Text + Clean Data]
-C --> D[🧱 Chunking<br>Split Text into Meaningful Parts]
-D --> E[🧬 Embedding Generation<br>Gemini text-embedding-004]
-E --> F[🗂️ Vector Storage<br>Stored Locally or in Memory]
-
-G[💬 User Query Input] --> H[🔍 Convert Query → Embedding]
-H --> I[📏 Similarity Search<br>Find Top-k Relevant Chunks]
-I --> J[🧠 LLM Synthesis<br>gemini-2.5-flash-preview-05-20]
-J --> K[🗣️ Contextual Answer Generation<br>Based on Retrieved Chunks]
-
-F --> I
-B -->|Serves Frontend| L[💻 Next.js + Tailwind Frontend<br>Responsive UI for Upload & Query]
-K --> L
-```
+| Component | Technology | Role |
+|------------|-------------|------|
+| **Frontend (`index.html`)** | HTML, Tailwind CSS, JavaScript | Handles file uploads, user interactions, and sends requests to the API. Does **not** store API keys. |
+| **Backend (`app.py`)** | Python, Flask, `google-genai` | Parses documents (`pdfminer.six`, `pandas`), extracts text, performs RAG or summarization using Gemini API, and returns responses. |
 
 ---
 
-## ⚙️ **Tech Stack**
+## 🚀 Setup & Installation
 
-| Layer         | Technology                                            | Purpose                                  |
-| ------------- | ----------------------------------------------------- | ---------------------------------------- |
-| Backend       | **Flask (Python)**                                    | RESTful API, file handling, RAG pipeline |
-| RAG Framework | **LangChain**                                         | Document loaders, chunking, retrieval    |
-| Embeddings    | **Gemini text-embedding-004**                         | Vector representation of document text   |
-| LLM           | **Gemini 2.5 Flash Preview**                          | Contextual answer and summary generation |
-| Vector Store  | **Chroma (Local)**                                    | Persistent storage of embeddings         |
-| Frontend      | **Next.js + Tailwind CSS**                            | Responsive and clean UI                  |
-| Deployment    | **Render / Railway** (Backend), **Vercel** (Frontend) | Free hosting & scalability               |
+### 1. Prerequisites
+- Python **3.9+**
+- A valid **Gemini API Key**
 
 ---
 
-## 🗂️ **Project Structure**
-
-```
-KnowVault/
-│
-├── backend/
-│   ├── app.py                 # Flask entry point
-│   ├── config.py              # API keys and constants
-│   ├── requirements.txt
-│   ├── routes/
-│   │   ├── ingest_routes.py   # /upload endpoint
-│   │   └── query_routes.py    # /query endpoint
-│   ├── utils/
-│   │   ├── pdf_loader.py      # Extract text from PDFs
-│   │   ├── vector_store.py    # Handle embeddings and storage
-│   │   └── rag_pipeline.py    # Core RAG logic
-│   └── data/
-│       ├── uploads/           # Uploaded documents
-│       └── chroma_store/      # Local vector database
-│
-└── frontend/
-    ├── pages/
-    │   ├── index.js           # Home page UI
-    ├── components/
-    │   ├── UploadBox.js       # File upload interface
-    │   ├── QueryBox.js        # Query input and button
-    │   └── AnswerCard.js      # Display answers and sources
-    ├── styles/
-    │   └── globals.css
-    └── utils/
-        └── api.js             # Axios config for backend API
-```
-
----
-
-## 🧠 **How KnowVault Works**
-
-1️⃣ **Upload Documents** → TXT, CSV, DOCX, XLSX, PDF  
-2️⃣ **Processing & Chunking** → Extract and split content into digestible pieces  
-3️⃣ **Embedding Creation** → Convert text into vector form using Gemini API  
-4️⃣ **Storage** → Save embeddings locally using Chroma  
-5️⃣ **Query Handling** → Convert user query to embedding and retrieve top relevant chunks  
-6️⃣ **Synthesis** → LLM generates factual, context-aware answers  
-7️⃣ **Frontend Display** → Show generated answer + document sources  
-
----
-
-## 🧩 **API Endpoints**
-
-| Endpoint     | Method | Description                                                        |
-| ------------ | ------ | ------------------------------------------------------------------ |
-| `/upload`    | POST   | Uploads and processes PDF/TXT/CSV/DOCX/XLSX files                  |
-| `/query`     | POST   | Takes a user query and returns an AI-generated answer with sources |
-| `/summarize` | POST   | Summarizes the uploaded documents                                  |
-
-**Example Response:**
-
-```json
-{
-  "answer": "The uploaded documents discuss AI trends in data analytics.",
-  "sources": ["AI_Report.pdf (Page 3)", "Trends2024.docx (Page 2)"]
-}
-```
-
----
-
-## ⚙️ **Setup and Run Locally**
-
-### 1. Clone Repository
+### 2. Project Initialization
 
 ```bash
-git clone https://github.com/your-username/KnowVault.git
-cd KnowVault
-```
+# Navigate to project root
+cd RAG_basic
 
-### 2. Create Virtual Environment
-
-```bash
+# Create a virtual environment
 python -m venv venv
-source venv/bin/activate      # Windows: venv\Scripts\activate
-```
+
+# Activate (Windows PowerShell)
+.\venv\Scripts\Activate.ps1
+
+# OR (Linux/macOS)
+source venv/bin/activate
+````
+
+---
 
 ### 3. Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install flask flask-cors google-genai python-dotenv pdfminer.six openpyxl pandas
 ```
+
+---
 
 ### 4. Configure API Key
 
-Get your **Gemini API key** from [Google AI Studio](https://aistudio.google.com/app/apikey).
+Create a `.env` file inside your project root (`RAG_basic/.env`) and add your Gemini API key:
 
-Set it as an environment variable:
-
-**macOS/Linux:**
-
-```bash
-export GEMINI_API_KEY="YOUR_API_KEY_HERE"
+```env
+GEMINI_API_KEY="YOUR_GEMINI_API_KEY_HERE"
 ```
 
-**Windows:**
+---
 
-```cmd
-set GEMINI_API_KEY=YOUR_API_KEY_HERE
-```
+## ▶️ Running the Application
 
-### 5. Run the Application
+### Step 1: Start the Backend Server
+
+Make sure your virtual environment is active, then run:
 
 ```bash
 python app.py
 ```
 
-The backend will start at 👉 **[http://127.0.0.1:5000/](http://127.0.0.1:5000/)**
+Server starts at:
+👉 [http://127.0.0.1:5000](http://127.0.0.1:5000)
 
 ---
 
-## 💻 **Frontend Setup (Next.js + Tailwind)**
+### Step 2: Open the Frontend
 
-Navigate to frontend folder:
+Open the `index.html` file directly in your browser.
 
-```bash
-cd frontend
-npm install
-npm run dev
+---
+
+## 💡 Usage Guide
+
+1. Click **“Select File”** and upload your PDF, CSV, or Excel file.
+2. Type a question to enter **Q&A Mode**, or leave blank to summarize the file.
+3. Click **Ask Question** or **Summarize All Content**.
+4. The LLM response will appear in the **Server Response** section.
+
+---
+
+## ⚠️ Troubleshooting
+
+| Issue                     | Possible Cause            | Solution                                                          |
+| ------------------------- | ------------------------- | ----------------------------------------------------------------- |
+| `ModuleNotFoundError`     | Missing dependencies      | Activate virtual environment and run `pip install [dependencies]` |
+| `API Error: 400/401`      | Incorrect Gemini API Key  | Verify key in `.env` file                                         |
+| `Connection Error`        | Flask server not running  | Ensure you ran `python app.py` and it's on port 5000              |
+| `Unsupported File Format` | Missing parsing libraries | Ensure `pdfminer.six`, `openpyxl`, and `pandas` are installed     |
+
+---
+
+## 📁 Folder Structure
+
+```
+RAG_basic/
+│
+├── app.py
+├── index.html
+├── .env
+├── venv/
+├── static/
+│   └── (optional Tailwind assets)
+├── src/
+└── faiss_store/
 ```
 
-Your frontend will be live at 👉 **[http://localhost:3000](http://localhost:3000)**
+---
+
+## 🧩 Tech Stack
+
+* **Backend:** Flask, Python, Google GenAI
+* **Frontend:** HTML, Tailwind CSS, JavaScript
+* **LLM Model:** Gemini 2.5 Flash
+* **Libraries:** pdfminer.six, pandas, openpyxl
 
 ---
 
-## 🌐 **Deployment**
+## 🪄 Future Improvements
 
-| Component                 | Platform                                                        | Command                       |
-| ------------------------- | --------------------------------------------------------------- | ----------------------------- |
-| **Backend**               | [Render](https://render.com/) / [Railway](https://railway.app/) | `gunicorn app:app`            |
-| **Frontend**              | [Vercel](https://vercel.com/)                                   | Auto-deploy via GitHub        |
-| **Environment Variables** | `.env`                                                          | `GEMINI_API_KEY=your_api_key` |
+* Add multi-file RAG support
+* Integrate streaming LLM responses
+* Include database for chat history
 
 ---
 
-## 🎥 **Demo Flow**
+## 🧑‍💻 Author
 
-🟢 **Step 1:** Upload a few PDFs or DOCX files  
-🟢 **Step 2:** Ask a natural question (e.g., “Summarize the key findings”)  
-🟢 **Step 3:** View AI-generated contextual answer + document sources  
-🟢 **Step 4 (Bonus):** Click “Summarize Documents” for quick insights  
-
-**🎬 Example Command:**
-
-```bash
-curl -X POST http://127.0.0.1:5000/query -H "Content-Type: application/json" -d '{"query": "What are the main themes discussed?"}'
-```
-
----
-
-## 🧱 **Evaluation Focus**
-
-✅ Retrieval accuracy  
-✅ Synthesis quality  
-✅ Code structure & modularity  
-✅ Clean and responsive UI  
-✅ LLM integration (Gemini)  
-✅ Bonus: Source display + Summarization  
-
----
-
-## 🧑‍💻 **Author**
-
-**Janavi Singh**
-🎓 Software Engineering Student | AI-ML & Data Science Enthusiast
-🔗 [LinkedIn](https://linkedin.com/in/janavi-singh) • [GitHub](https://github.com/your-username)
-
----
-
-## ⭐ **Support & Contributions**
-
-If you found this project insightful or inspiring,
-⭐ **Star this repo** and share it with fellow AI enthusiasts!
+**Janavi** — Student, AI Developer & Research Enthusiast
+🔗 *Feel free to fork, modify, and experiment with this project!*
 
 ---
