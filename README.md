@@ -30,10 +30,10 @@ To build a **knowledge-base search system** that:
 
 | Component | Technology | Role |
 |------------|-------------|------|
-| **Backend** | Python, Flask/FastAPI | Handles document ingestion, text parsing, embedding generation, and LLM query synthesis |
-| **Embedding & Retrieval** | FAISS / Chroma / LangChain | Indexes and retrieves relevant document chunks |
-| **LLM Layer** | Gemini API / OpenAI GPT / Local LLM | Synthesizes the final answer from retrieved context |
-| **Frontend (optional)** | HTML + Tailwind CSS | User interface for document upload and query submission |
+| **Backend** | Python, Flask | Handles document ingestion, text parsing, embedding generation, and LLM query synthesis |
+| **Embedding & Retrieval** | FAISS| Indexes and retrieves relevant document chunks |
+| **LLM Layer** | Gemini API  | Synthesizes the final answer from retrieved context |
+| **Frontend (optional)** | HTML + Tailwind CSS + Javascript | User interface for document upload and query submission |
 
 ---
 
@@ -151,8 +151,10 @@ Open `index.html` in your browser and start querying your knowledge base.
 ## 🧑‍💻 Author
 
 **Janavi** — Student & AI Developer
+
 Passionate about building practical AI systems that bridge **data retrieval and intelligent synthesis**.
 
 ---
+
 
 
