@@ -1,78 +1,69 @@
 import os
 import io
 import pandas as pd
-import json
 from pdfminer.high_level import extract_text_to_fp
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 
-# --- LLM CLIENT IMPORTS ---
-from google import genai 
+from google import genai
 from google.genai.errors import APIError
+
+# RAG pipeline
+from src.rag_pipeline import build_vector_store, retrieve_context
 
 load_dotenv()
 
-# --- FLASK APP INITIALIZATION (FIXED) ---
-app = Flask(__name__) # <--- FIX: Initialize the Flask app here
+app = Flask(__name__)
 CORS(app)
 
-# 1. Configuration (Stored Securely on the Server)
+# --- CONFIG ---
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-LLM_MODEL = "gemini-2.5-flash" 
+LLM_MODEL = "gemini-2.5-flash"
 
 if not GEMINI_API_KEY:
-    # Use standard logging or print for non-web errors
-    print("FATAL ERROR: GEMINI_API_KEY environment variable not set in .env file.")
-    # We won't raise the error yet to allow the server to start for easier debugging
+    print("FATAL: GEMINI_API_KEY missing")
     client = None
 else:
-    # Initialize the Gemini Client once
     try:
         client = genai.Client(api_key=GEMINI_API_KEY)
-        print(f"Gemini Client initialized using model: {LLM_MODEL}")
+        print(f"Gemini initialized: {LLM_MODEL}")
     except Exception as e:
-        print(f"Error initializing Gemini client: {e}")
+        print(f"Gemini init error: {e}")
         client = None
 
-# --- FILE PARSING UTILITY ---
 
+# --- FILE PARSER ---
 def extract_text_from_file(file):
-    """Extracts text from PDF, CSV, or XLSX file streams."""
     filename = file.filename.lower()
-    # Read file content into a memory buffer
-    file_stream = io.BytesIO(file.read()) 
-    
-    try:
-        if filename.endswith('.pdf'):
-            output_string = io.StringIO()
-            # pdfminer.six extracts text from the stream
-            extract_text_to_fp(file_stream, output_string)
-            return output_string.getvalue()
+    file_stream = io.BytesIO(file.read())
 
-        elif filename.endswith('.csv'):
-            # Use pandas to read CSV (assumes basic formatting)
+    try:
+        if filename.endswith(".pdf"):
+            output = io.StringIO()
+            extract_text_to_fp(file_stream, output)
+            return output.getvalue()
+
+        elif filename.endswith(".csv"):
             df = pd.read_csv(file_stream)
-            # Convert the entire DataFrame to a single string for RAG
             return df.to_string(index=False)
 
-        elif filename.endswith(('.xlsx', '.xls')):
-            # Use pandas to read Excel (reads the first sheet by default)
+        elif filename.endswith((".xlsx", ".xls")):
             df = pd.read_excel(file_stream)
             return df.to_string(index=False)
 
     except Exception as e:
-        print(f"File parsing error for {filename}: {e}")
+        print(f"Parsing error: {e}")
         return None
-    
+
     return None
 
-# --- CORE LLM FUNCTION ---
 
-def run_gemini_generation(system_prompt, user_prompt):
-    """Handles the actual call to the Gemini API."""
+# --- LLM CALL ---
+def run_gemini(system_prompt, user_prompt):
     if not client:
-        return "LLM Client not initialized. Check GEMINI_API_KEY in .env."
+        return "LLM not initialized"
+
     try:
         response = client.models.generate_content(
             model=LLM_MODEL,
@@ -80,92 +71,102 @@ def run_gemini_generation(system_prompt, user_prompt):
             config={"system_instruction": system_prompt}
         )
         return response.text
+
     except APIError as e:
-        print(f"Gemini API Error: {e.message}")
         return f"Gemini API Error: {e.message}"
+
     except Exception as e:
-        print(f"Unexpected Error: {e}")
-        return f"An unexpected error occurred: {e}"
+        return f"Unexpected error: {e}"
 
-# --- API ENDPOINTS ---
 
-@app.route('/api/rag/ask', methods=['POST'])
-def ask_question():
-    # 1. Get the file and query from request.files and request.form
-    if 'document' not in request.files:
-        return jsonify({"message": "No document file part ('document') in the request."}), 400
-    
-    file = request.files['document']
-    # The query is sent as form data from the frontend's FormData object
-    query = request.form.get('query', '').strip() 
-    
-    if file.filename == '' or not query:
-        return jsonify({"message": "File and query are required."}), 400
+# --- ASK ENDPOINT ---
+@app.route("/api/rag/ask", methods=["POST"])
+def ask():
 
-    # 2. Extract text from the uploaded file
-    doc_content = extract_text_from_file(file)
-    if not doc_content:
-        return jsonify({"message": "Unsupported file format or unable to extract text. Check server console for details."}), 400
+    if "document" not in request.files:
+        return jsonify({"message": "Document missing"}), 400
 
-    # 3. Proceed with LLM call (RAG Prompt)
-    system_prompt = "You are an expert RAG system. Answer the user's QUESTION strictly based on the provided CONTEXT. Do NOT use external knowledge. If the information is not in the CONTEXT, state clearly that it is not available in the document. Respond concisely."
-    user_prompt = f"CONTEXT:\n---\n{doc_content}\n---\n\nQUESTION: {query}\n\nANSWER:"
-    
-    answer = run_gemini_generation(system_prompt, user_prompt)
+    file = request.files["document"]
+    query = request.form.get("query", "").strip()
 
-    if answer.startswith("Gemini API Error") or answer.startswith("LLM Client not initialized"):
+    if file.filename == "" or not query:
+        return jsonify({"message": "File + query required"}), 400
+
+    doc_text = extract_text_from_file(file)
+
+    if not doc_text:
+        return jsonify({"message": "Failed to extract text"}), 400
+
+    # Limit size (important for performance)
+    doc_text = doc_text[:150000]
+
+    try:
+        # 🔥 REAL RAG PIPELINE
+        vectorstore = build_vector_store(doc_text)
+        context = retrieve_context(vectorstore, query, top_k=5)
+
+    except Exception as e:
+        return jsonify({"message": f"RAG error: {str(e)}"}), 500
+
+    system_prompt = """
+You are a strict RAG system.
+Answer ONLY from CONTEXT.
+If answer not found, say: Not present in document.
+Be concise.
+"""
+
+    user_prompt = f"""
+CONTEXT:
+{context}
+
+QUESTION:
+{query}
+
+ANSWER:
+"""
+
+    answer = run_gemini(system_prompt, user_prompt)
+
+    if "Error" in answer or "LLM not initialized" in answer:
         return jsonify({"message": answer}), 500
 
     return jsonify({"answer": answer})
 
 
-@app.route('/api/rag/summarize', methods=['POST'])
-def summarize_content():
-    # 1. Get the file from request.files
-    if 'document' not in request.files:
-        return jsonify({"message": "No document file part ('document') in the request."}), 400
-    
-    file = request.files['document']
-    
-    if file.filename == '':
-        return jsonify({"message": "File is required for summarization."}), 400
+# --- SUMMARIZE ---
+@app.route("/api/rag/summarize", methods=["POST"])
+def summarize():
 
-    # 2. Extract text from the uploaded file
-    doc_content = extract_text_from_file(file)
-    if not doc_content:
-        return jsonify({"message": "Unsupported file format or unable to extract text. Check server console for details."}), 400
-    
-    # 3. Proceed with LLM call (Summarization Prompt)
-    system_prompt = "You are a professional summarization assistant. Provide a comprehensive, multi-paragraph summary of the following document. Structure the summary logically, using headings or lists if appropriate."
-    user_prompt = f"DOCUMENT CONTENT:\n---\n{doc_content}\n---\n\nProvide a detailed, structured summary of this document."
-    
-    summary = run_gemini_generation(system_prompt, user_prompt)
-    
-    if summary.startswith("Gemini API Error") or summary.startswith("LLM Client not initialized"):
-        return jsonify({"message": summary}), 500
-        
+    if "document" not in request.files:
+        return jsonify({"message": "Document missing"}), 400
+
+    file = request.files["document"]
+
+    if file.filename == "":
+        return jsonify({"message": "File required"}), 400
+
+    doc_text = extract_text_from_file(file)
+
+    if not doc_text:
+        return jsonify({"message": "Failed to extract text"}), 400
+
+    system_prompt = """
+You are a summarization expert.
+Provide structured summary with key points.
+"""
+
+    user_prompt = f"""
+DOCUMENT:
+{doc_text}
+
+SUMMARY:
+"""
+
+    summary = run_gemini(system_prompt, user_prompt)
+
     return jsonify({"summary": summary})
 
-if __name__ == '__main__':
-    print(f"Starting Flask server on http://127.0.0.1:5000")
-    app.run(debug=True)
 
-
-"""from src.data_loader import load_all_documents
-from src.vectorstore import FaissVectorStore
-from src.search import RAGSearch
-
-# Example usage
 if __name__ == "__main__":
-    
-    docs = load_all_documents("data")
-    store = FaissVectorStore("faiss_store")
-    #store.build_from_documents(docs)
-    store.load()
-    #print(store.query("What is attention mechanism?", top_k=3))
-    rag_search = RAGSearch()
-    query = "What is attention mechanism?"
-    summary = rag_search.search_and_summarize(query, top_k=3)
-    print("Summary:", summary)
-    
-    """
+    print("Server running on http://127.0.0.1:5000")
+    app.run(debug=True)
